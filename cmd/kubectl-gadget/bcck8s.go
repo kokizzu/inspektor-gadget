@@ -24,7 +24,7 @@ import (
 var execsnoopCmd = &cobra.Command{
 	Use:   "execsnoop",
 	Short: "Trace new processes",
-	Run:   bccCmd("execsnoop", "/usr/share/bcc/tools/execsnoop"),
+	Run:   bccCmd("execsnoop", "/bin/execsnoop"),
 }
 
 var opensnoopCmd = &cobra.Command{
