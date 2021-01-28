@@ -80,7 +80,7 @@ func execPod(client *kubernetes.Clientset, node string, podCmd string, cmdStdout
 			Stdin:     false,
 			Stdout:    true,
 			Stderr:    true,
-			TTY:       false,
+			TTY:       true,
 		}, scheme.ParameterCodec)
 
 	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", req.URL())
@@ -92,7 +92,7 @@ func execPod(client *kubernetes.Clientset, node string, podCmd string, cmdStdout
 		Stdin:  nil,
 		Stdout: cmdStdout,
 		Stderr: cmdStderr,
-		Tty:    false,
+		Tty:    true,
 	})
 	return err
 }
