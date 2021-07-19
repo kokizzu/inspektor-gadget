@@ -42,6 +42,8 @@ const (
 )
 
 type GadgetTracerManager struct {
+	pb.UnsafeGadgetTracerManagerServer
+
 	mu sync.Mutex
 
 	// node where this instance is running
