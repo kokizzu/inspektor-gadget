@@ -245,6 +245,19 @@ func (g *GadgetTracerManager) RemoveContainer(ctx context.Context, containerDefi
 	return &pb.RemoveContainerResponse{}, nil
 }
 
+func (g *GadgetTracerManager) GetContainerByMntNs(ctx context.Context, req *pb.GetContainerByMntNsRequest) (*pb.GetContainerByMntNsResponse, error) {
+	var container *pb.ContainerDefinition = nil
+
+	for _, c := range g.containers {
+		if c.Mntns == req.Mntnsid {
+			container = &c
+			break
+		}
+	}
+
+	return &pb.GetContainerByMntNsResponse{Container: container}, nil
+}
+
 func (g *GadgetTracerManager) DumpState(ctx context.Context, req *pb.DumpStateRequest) (*pb.Dump, error) {
 	out := "List of containers:\n"
 	for i, c := range g.containers {
