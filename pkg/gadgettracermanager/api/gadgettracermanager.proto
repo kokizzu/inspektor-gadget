@@ -27,6 +27,9 @@ service GadgetTracerManager {
   rpc AddContainer(ContainerDefinition) returns (AddContainerResponse) {}
   rpc RemoveContainer(ContainerDefinition) returns (RemoveContainerResponse) {}
 
+
+  rpc GetContainerByMntNs(GetContainerByMntNsRequest) returns (GetContainerByMntNsResponse) {}
+
   // Methods called for debugging
 
   rpc DumpState(DumpStateRequest) returns (Dump) {}
@@ -88,4 +91,12 @@ message DumpStateRequest {
 
 message Dump {
   string state = 1;
+}
+
+message GetContainerByMntNsRequest {
+  uint64 mntnsid = 1;
+}
+
+message GetContainerByMntNsResponse {
+  ContainerDefinition container = 1;
 }
