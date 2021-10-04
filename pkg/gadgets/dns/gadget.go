@@ -46,7 +46,9 @@ type TraceFactory struct {
 }
 
 func NewFactory() gadgets.TraceFactory {
-	return &TraceFactory{}
+	f := &TraceFactory{}
+	f.DeleteTrace = f.deleteTrace
+	return f
 }
 
 func (f *TraceFactory) Description() string {
@@ -59,7 +61,7 @@ func (f *TraceFactory) OutputModesSupported() map[string]struct{} {
 	}
 }
 
-func (f *TraceFactory) DeleteTrace(name string, t interface{}) {
+func (f *TraceFactory) deleteTrace(name string, t interface{}) {
 	trace := t.(*Trace)
 	if trace.started {
 		trace.resolver.Unsubscribe(genPubSubKey(name))
