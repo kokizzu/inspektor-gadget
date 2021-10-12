@@ -247,6 +247,12 @@ func GenericTraceCommand(
 
 	var results gadgetv1alpha1.TraceList
 	start := time.Now()
+
+	done := make(map[string]struct{})
+	successNodeCount := 0
+	nodeErrors := make(map[string]string)
+	nodeWarnings := make(map[string]string)
+
 RetryLoop:
 	for {
 		results = gadgetv1alpha1.TraceList{}
@@ -263,28 +269,38 @@ RetryLoop:
 		}
 
 		timeout := time.Since(start) > traceTimeout
-		successNodeCount := 0
-		nodeErrors := make(map[string]string)
-		nodeWarnings := make(map[string]string)
 		for _, i := range results.Items {
-			if i.Status.OperationError != "" {
-				nodeErrors[i.Spec.Node] = i.Status.OperationError
-			} else if i.Status.OperationWarning != "" {
-				nodeWarnings[i.Spec.Node] = i.Status.OperationWarning
-			} else if i.Status.State == "Completed" || i.Status.State == "Started" {
-				successNodeCount++
-			} else {
-				// Consider Trace as timed out if it neither moved the state forward
-				// nor notified of an error or warning within the time window.
-				if timeout {
-					nodeErrors[i.Spec.Node] = fmt.Sprintf("No results received from trace within %v",
-						traceTimeout)
-					continue
-				}
-
-				time.Sleep(100 * time.Millisecond)
-				continue RetryLoop
+			// if we already processed this result, do nothing
+			if _, ok := done[i.Spec.Node]; ok {
+				continue
 			}
+
+			switch {
+			case i.Status.OperationError != "":
+				nodeErrors[i.Spec.Node] = i.Status.OperationError
+			case i.Status.OperationWarning != "":
+				nodeWarnings[i.Spec.Node] = i.Status.OperationWarning
+			case i.Status.State == "Completed":
+				fallthrough
+			case i.Status.State == "Started":
+				successNodeCount++
+			case !timeout:
+				// we haven't timeout. Let's keep going with other resources
+				continue
+			default:
+				// resource didn't report any status update
+				nodeErrors[i.Spec.Node] = fmt.Sprintf("No results received from trace within %v",
+					traceTimeout)
+			}
+
+			done[i.Spec.Node] = struct{}{}
+		}
+
+		// if all resources aren't ready and we haven't timeout wait a bit more
+		// and try again
+		if len(done) != len(results.Items) && !timeout {
+			time.Sleep(100 * time.Millisecond)
+			continue RetryLoop
 		}
 
 		// Don't print warnings if at least one node succeeded. This avoids showing
