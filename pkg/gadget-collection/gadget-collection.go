@@ -16,6 +16,7 @@ package gadgetcollection
 
 import (
 	"github.com/kinvolk/inspektor-gadget/pkg/gadgets"
+	auditseccomp "github.com/kinvolk/inspektor-gadget/pkg/gadgets/audit-seccomp"
 	"github.com/kinvolk/inspektor-gadget/pkg/gadgets/biolatency"
 	"github.com/kinvolk/inspektor-gadget/pkg/gadgets/dns"
 	networkpolicyadvisor "github.com/kinvolk/inspektor-gadget/pkg/gadgets/networkpolicy"
@@ -31,6 +32,7 @@ func TraceFactories() map[string]gadgets.TraceFactory {
 		"process-collector":      processcollector.NewFactory(),
 		"socket-collector":       socketcollector.NewFactory(),
 		"seccomp":                seccomp.NewFactory(),
+		"audit-seccomp":          auditseccomp.NewFactory(),
 		"network-policy-advisor": networkpolicyadvisor.NewFactory(),
 	}
 }
