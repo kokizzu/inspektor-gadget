@@ -39,25 +39,25 @@ jobs:
           path: "~/cache-debs"
           key: cache-debs-libbpf-1:0.4.0-1ubuntu1-libseccomp-2.5.1-1ubuntu1~20.04.1
 
-    - name: Install deb packages
-      env:
-        CACHE_HIT: ${{steps.cache-debs.outputs.cache-hit}}
-        LIBBPF_VERSION: "1:0.4.0-1ubuntu1"
-        LIBSECCOMP_VERSION: "2.5.1-1ubuntu1~20.04.1"
-      run: |
-          if [[ "$CACHE_HIT" == 'true' ]]; then
-            sudo cp --verbose --force --recursive ~/cache-debs/* /
-          else
-            sudo apt install -y software-properties-common
-            sudo add-apt-repository -y ppa:tuxinvader/kernel-build-tools
-            sudo apt-get update
-            sudo apt install -y libbpf-dev="$LIBBPF_VERSION" libseccomp-dev="$LIBSECCOMP_VERSION"
-            mkdir -p ~/cache-debs
-            sudo dpkg -L libbpf-dev libseccomp-dev | \
-                while IFS= read -r f; do \
-                    if test -f $f; then echo $f; fi; \
-                done | xargs cp --parents --target-directory ~/cache-debs/
-          fi
+#    - name: Install deb packages
+#      env:
+#        CACHE_HIT: ${{steps.cache-debs.outputs.cache-hit}}
+#        LIBBPF_VERSION: "1:0.4.0-1ubuntu1"
+#        LIBSECCOMP_VERSION: "2.5.1-1ubuntu1~20.04.1"
+#      run: |
+#          if [[ "$CACHE_HIT" == 'true' ]]; then
+#            sudo cp --verbose --force --recursive ~/cache-debs/* /
+#          else
+#            sudo apt install -y software-properties-common
+#            sudo add-apt-repository -y ppa:tuxinvader/kernel-build-tools
+#            sudo apt-get update
+#            sudo apt install -y libbpf-dev="$LIBBPF_VERSION" libseccomp-dev="$LIBSECCOMP_VERSION"
+#            mkdir -p ~/cache-debs
+#            sudo dpkg -L libbpf-dev libseccomp-dev | \
+#                while IFS= read -r f; do \
+#                    if test -f $f; then echo $f; fi; \
+#                done | xargs cp --parents --target-directory ~/cache-debs/
+#          fi
 
     - name: Cache Go modules
       uses: actions/cache@v2
@@ -103,6 +103,10 @@ jobs:
         username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
         password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
+    - name: Build builder image
+      run: |
+        docker build --target builder -t builder -f gadget.Dockerfile .
+
     - name: Build gadget container
       uses: docker/build-push-action@v2
       with:
@@ -132,7 +136,7 @@ jobs:
           exit 1
         fi
 
-        make kubectl-gadget-all
+        docker run -v $(pwd):/gadget -i builder /bin/sh -c "cd /gadget && make -j$(nproc) kubectl-gadget-all"
 
         # Prepare assets for release and actions artifacts
         for target in $(make list-kubectl-gadget-targets); do
@@ -146,21 +150,21 @@ jobs:
           rm -rf $platform
         done
 
-    - name: Build local-gadget for all platforms
-      run: |
-        make local-gadget-all
-
-        # Prepare assets for release and actions artifacts
-        for target in $(make list-local-gadget-targets); do
-          platform=$(echo $target|cut -d- -f3-4)
-          mkdir $platform
-          cp local-gadget-$platform $platform/local-gadget
-          cp LICENSE $platform/
-          tar --sort=name --owner=root:0 --group=root:0 \
-            -czf local-gadget-$platform.tar.gz -C $platform \
-            local-gadget LICENSE
-          rm -rf $platform
-        done
+#    - name: Build local-gadget for all platforms
+#      run: |
+#        make local-gadget-all
+#
+#        # Prepare assets for release and actions artifacts
+#        for target in $(make list-local-gadget-targets); do
+#          platform=$(echo $target|cut -d- -f3-4)
+#          mkdir $platform
+#          cp local-gadget-$platform $platform/local-gadget
+#          cp LICENSE $platform/
+#          tar --sort=name --owner=root:0 --group=root:0 \
+#            -czf local-gadget-$platform.tar.gz -C $platform \
+#            local-gadget LICENSE
+#          rm -rf $platform
+#        done
 
     - name: Basic unit tests
       run: |
@@ -170,33 +174,33 @@ jobs:
       run: |
         make controller-tests
 
-    - name: Unit tests for local-gadget (as root)
-      run: |
-        KERNEL=$(uname -r)
-        ARCH=$(uname -m)
-        if test -f /sys/kernel/btf/vmlinux; then
-          echo "BTF is available at /sys/kernel/btf/vmlinux"
-        else
-          echo "BTF is not available: Trying BTFHub"
-          source /etc/os-release
-          URL="https://github.com/aquasecurity/btfhub/raw/main/archive/$ID/$VERSION_ID/$ARCH/$KERNEL.btf.tar.xz"
-          echo "Trying to download vmlinux from $URL"
-
-          if [[ $(wget -S --spider "$URL" 2>&1 | grep 'HTTP/1.1 200 OK') ]]; then
-            wget -q -O /tmp/vmlinux.btf.tar.xz "$URL"
-            tar -xvf /tmp/vmlinux.btf.tar.xz
-            # Use objcopy to put the btf info in an ELF file as libbpf and cilium/ebpf
-            # by default check if there is an ELF file with the .BTF section at
-            # /boot/vmlinux-$KERNEL.
-            sudo objcopy --input binary --output elf64-little --rename-section .data=.BTF *.btf /boot/vmlinux-$KERNEL
-            rm *.btf
-            echo "vmlinux downloaded at /boot/vmlinux-$KERNEL"
-          else
-            echo "vmlinux not found"
-          fi
-        fi
-
-        make local-gadget-tests
+#    - name: Unit tests for local-gadget (as root)
+#      run: |
+#        KERNEL=$(uname -r)
+#        ARCH=$(uname -m)
+#        if test -f /sys/kernel/btf/vmlinux; then
+#          echo "BTF is available at /sys/kernel/btf/vmlinux"
+#        else
+#          echo "BTF is not available: Trying BTFHub"
+#          source /etc/os-release
+#          URL="https://github.com/aquasecurity/btfhub/raw/main/archive/$ID/$VERSION_ID/$ARCH/$KERNEL.btf.tar.xz"
+#          echo "Trying to download vmlinux from $URL"
+#
+#          if [[ $(wget -S --spider "$URL" 2>&1 | grep 'HTTP/1.1 200 OK') ]]; then
+#            wget -q -O /tmp/vmlinux.btf.tar.xz "$URL"
+#            tar -xvf /tmp/vmlinux.btf.tar.xz
+#            # Use objcopy to put the btf info in an ELF file as libbpf and cilium/ebpf
+#            # by default check if there is an ELF file with the .BTF section at
+#            # /boot/vmlinux-$KERNEL.
+#            sudo objcopy --input binary --output elf64-little --rename-section .data=.BTF *.btf /boot/vmlinux-$KERNEL
+#            rm *.btf
+#            echo "vmlinux downloaded at /boot/vmlinux-$KERNEL"
+#          else
+#            echo "vmlinux not found"
+#          fi
+#        fi
+#
+#        make local-gadget-tests
 
     - name: Setup Minikube
       uses: manusa/actions-setup-minikube@v2.4.2
