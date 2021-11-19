@@ -1,6 +1,6 @@
 # Prepare and build gadget artifacts in a container
 ARG OS_TAG=20.04
-FROM ubuntu:${OS_TAG} as builder
+FROM ubuntu:${OS_TAG}
 
 RUN set -ex; \
 	export DEBIAN_FRONTEND=noninteractive; \
