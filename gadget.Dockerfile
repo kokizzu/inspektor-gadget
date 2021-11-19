@@ -1,4 +1,4 @@
-FROM builder as builder
+FROM builder:latest as builder
 
 # This COPY is limited by .dockerignore
 COPY ./ /gadget
