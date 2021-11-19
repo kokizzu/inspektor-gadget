@@ -20,17 +20,17 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v1
 
-    - name: Cache external deps
-      uses: actions/cache@v2
-      with:
-        # - Tests (tests.mk) need etcd, kube-apiserver, kubectl
-        # - Generating code (crd.mk) needs controller-gen
-        path: |
-          bin/etcd
-          bin/kube-apiserver
-          bin/kubectl
-          bin/controller-gen
-        key: ${{ runner.os }}-${{ hashFiles('tests.mk', 'crd.mk', '.github/workflows/inspektor-gadget.yml') }}
+#    - name: Cache external deps
+#      uses: actions/cache@v2
+#      with:
+#        # - Tests (tests.mk) need etcd, kube-apiserver, kubectl
+#        # - Generating code (crd.mk) needs controller-gen
+#        path: |
+#          bin/etcd
+#          bin/kube-apiserver
+#          bin/kubectl
+#          bin/controller-gen
+#        key: ${{ runner.os }}-${{ hashFiles('tests.mk', 'crd.mk', '.github/workflows/inspektor-gadget.yml') }}
 
     - name: Set IMAGE_TAG
       run: |
@@ -42,29 +42,29 @@ jobs:
         fi
         echo IMAGE_TAG=$IMAGE_TAG >> $GITHUB_ENV
 
-    - name: Check if generated files are updated
-      run: |
-        make manifests generate generate-documentation
-        git diff --exit-code HEAD --
+#    - name: Check if generated files are updated
+#      run: |
+#        make manifests generate generate-documentation
+#        git diff --exit-code HEAD --
 
     - name: Set up Docker Buildx
       id: buildx
       uses: docker/setup-buildx-action@v1
 
-    - name: Cache Docker layers
+#    - name: Cache Docker layers
       uses: actions/cache@v2
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-single-buildx-${{ hashFiles('gadget.Dockerfile') }}
         restore-keys: |
           ${{ runner.os }}-single-buildx
-
-    - name: Login to Container Registry
-      uses: docker/login-action@v1
-      with:
-        registry: ${{ secrets.CONTAINER_REGISTRY }}
-        username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
-        password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
+#
+#    - name: Login to Container Registry
+#      uses: docker/login-action@v1
+#      with:
+#        registry: ${{ secrets.CONTAINER_REGISTRY }}
+#        username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
+#        password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
     - name: Build builder image
       run: |
