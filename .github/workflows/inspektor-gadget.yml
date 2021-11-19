@@ -18,7 +18,10 @@ jobs:
       id: go
 
     - name: Check out code
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
 #    - name: Cache external deps
 #      uses: actions/cache@v2
