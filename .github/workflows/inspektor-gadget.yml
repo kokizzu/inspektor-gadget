@@ -20,9 +20,6 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-
 #    - name: Cache external deps
 #      uses: actions/cache@v2
 #      with:
@@ -69,7 +66,7 @@ jobs:
         username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
         password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
-    - name: Build gadget container
+    - name: Build builder container
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -78,6 +75,9 @@ jobs:
         tags: builder
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Build gadget container
       uses: docker/build-push-action@v2
