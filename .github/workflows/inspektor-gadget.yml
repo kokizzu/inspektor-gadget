@@ -204,6 +204,7 @@ jobs:
         prerelease: false
 
     - name: Create Release Assets
+      if: startsWith(github.ref, 'refs/tags/v')
       run: |
         # kubectl-gadget
         for target in $(make list-kubectl-gadget-targets); do
@@ -217,7 +218,7 @@ jobs:
           rm -rf $platform
         done
 
-      # localgadget
+        # localgadget
         for target in $(make list-local-gadget-targets); do
           platform=$(echo $target|cut -d- -f3-4)
           mkdir $platform
