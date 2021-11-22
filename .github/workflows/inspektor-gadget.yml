@@ -10,16 +10,6 @@ jobs:
     env:
       CONTAINER_REPO: ${{ secrets.CONTAINER_REPO }}
     steps:
-    - name: Check repo is clean
-      run: |
-        # Prevent releases with -dirty suffix due to forgotten entries in
-        # .gitignore.
-        changes="$(git status --porcelain)"
-        if [ -n "$changes" ] ; then
-          echo "$changes"
-          exit 1
-        fi
-
     - name: Set up Go 1.16
       uses: actions/setup-go@v1
       with:
@@ -28,6 +18,16 @@ jobs:
 
     - name: Check out code
       uses: actions/checkout@v1
+
+      - name: Check repo is clean
+      run: |
+        # Prevent releases with -dirty suffix due to forgotten entries in
+        # .gitignore.
+        changes="$(git status --porcelain)"
+        if [ -n "$changes" ] ; then
+          echo "$changes"
+          exit 1
+        fi
 
     - name: Cache external deps
       uses: actions/cache@v2
