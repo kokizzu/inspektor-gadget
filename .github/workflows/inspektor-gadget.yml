@@ -10,6 +10,15 @@ jobs:
     env:
       CONTAINER_REPO: ${{ secrets.CONTAINER_REPO }}
     steps:
+    - name: Check repo is clean
+      run: |
+        # Prevent releases with -dirty suffix due to forgotten entries in
+        # .gitignore.
+        changes="$(git status --porcelain)"
+        if [ -n "$changes" ] ; then
+          echo "$changes"
+          exit 1
+        fi
 
     - name: Set up Go 1.16
       uses: actions/setup-go@v1
@@ -124,43 +133,11 @@ jobs:
 
     - name: Build kubectl gadget plugin for all platforms
       run: |
-        # Prevent releases with -dirty suffix due to forgotten entries in
-        # .gitignore.
-        changes="$(git status --porcelain)"
-        if [ -n "$changes" ] ; then
-          echo "$changes"
-          exit 1
-        fi
-
-        make kubectl-gadget-all
-
-        # Prepare assets for release and actions artifacts
-        for target in $(make list-kubectl-gadget-targets); do
-          platform=$(echo $target|cut -d- -f3-4)
-          mkdir $platform
-          cp kubectl-gadget-$platform $platform/kubectl-gadget
-          cp LICENSE $platform/
-          tar --sort=name --owner=root:0 --group=root:0 \
-            -czf inspektor-gadget-$platform.tar.gz -C $platform \
-            kubectl-gadget LICENSE
-          rm -rf $platform
-        done
+        make -j$(nproc) kubectl-gadget-all
 
     - name: Build local-gadget for all platforms
       run: |
-        make local-gadget-all
-
-        # Prepare assets for release and actions artifacts
-        for target in $(make list-local-gadget-targets); do
-          platform=$(echo $target|cut -d- -f3-4)
-          mkdir $platform
-          cp local-gadget-$platform $platform/local-gadget
-          cp LICENSE $platform/
-          tar --sort=name --owner=root:0 --group=root:0 \
-            -czf local-gadget-$platform.tar.gz -C $platform \
-            local-gadget LICENSE
-          rm -rf $platform
-        done
+        make -j$(nproc) local-gadget-all
 
     - name: Basic unit tests
       run: |
@@ -225,6 +202,32 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
+
+    - name: Create Release Assets
+      run: |
+        # kubectl-gadget
+        for target in $(make list-kubectl-gadget-targets); do
+          platform=$(echo $target|cut -d- -f3-4)
+          mkdir $platform
+          cp kubectl-gadget-$platform $platform/kubectl-gadget
+          cp LICENSE $platform/
+          tar --sort=name --owner=root:0 --group=root:0 \
+            -czf inspektor-gadget-$platform.tar.gz -C $platform \
+            kubectl-gadget LICENSE
+          rm -rf $platform
+        done
+
+      # localgadget
+        for target in $(make list-local-gadget-targets); do
+          platform=$(echo $target|cut -d- -f3-4)
+          mkdir $platform
+          cp local-gadget-$platform $platform/local-gadget
+          cp LICENSE $platform/
+          tar --sort=name --owner=root:0 --group=root:0 \
+            -czf local-gadget-$platform.tar.gz -C $platform \
+            local-gadget LICENSE
+          rm -rf $platform
+        done
 
     - name: Upload Gadget Release Assets
       uses: csexton/release-asset-action@v2
