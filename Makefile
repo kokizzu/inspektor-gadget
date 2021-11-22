@@ -110,6 +110,7 @@ install/kubectl-gadget: kubectl-gadget-$(GOHOSTOS)-$(GOHOSTARCH)
 # gadget container
 .PHONY: gadget-container
 gadget-container:
+	docker build -t localhost:5000/name/builder:latest -f builder.Dockerfile .
 	docker build -t $(CONTAINER_REPO):$(IMAGE_TAG) -f gadget.Dockerfile .
 
 .PHONY: push-gadget-container
