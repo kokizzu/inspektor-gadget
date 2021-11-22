@@ -112,7 +112,7 @@ jobs:
           exit 1
         fi
 
-        docker run -v $(pwd):/gadget -it localhost:5000/name/builder /bin/sh -c "cd /gadget && make -j$(nproc) kubectl-gadget-all"
+        docker run -v $(pwd):/gadget localhost:5000/name/builder /bin/sh -c "cd /gadget && make -j$(nproc) kubectl-gadget-all"
 
         # Prepare assets for release and actions artifacts
         for target in $(make list-kubectl-gadget-targets); do
