@@ -19,7 +19,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v1
 
-      - name: Check repo is clean
+    - name: Check repo is clean
       run: |
         # Prevent releases with -dirty suffix due to forgotten entries in
         # .gitignore.
