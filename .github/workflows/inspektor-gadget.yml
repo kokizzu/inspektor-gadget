@@ -133,7 +133,7 @@ jobs:
 
     - name: Build kubectl gadget plugin for all platforms
       run: |
-        make -j$(nproc) kubectl-gadget-all
+        make kubectl-gadget-linux-amd64
 
     - name: Build local-gadget for all platforms
       run: |
@@ -207,6 +207,9 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
         # kubectl-gadget
+
+        make -j$(nproc) kubectl-gadget-all
+
         for target in $(make list-kubectl-gadget-targets); do
           platform=$(echo $target|cut -d- -f3-4)
           mkdir $platform
