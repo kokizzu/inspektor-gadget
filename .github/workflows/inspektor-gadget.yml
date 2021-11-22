@@ -137,7 +137,7 @@ jobs:
 
     - name: Build local-gadget for all platforms
       run: |
-        make -j$(nproc) local-gadget-all
+        make local-gadget-all
 
     - name: Basic unit tests
       run: |
