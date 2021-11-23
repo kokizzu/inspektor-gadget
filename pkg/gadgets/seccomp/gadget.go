@@ -27,7 +27,7 @@ import (
 	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	seccompprofilev1alpha1 "sigs.k8s.io/security-profiles-operator/api/seccompprofile/v1alpha1"
+	seccompprofile "sigs.k8s.io/security-profiles-operator/api/seccompprofile/v1beta1"
 	k8syaml "sigs.k8s.io/yaml"
 
 	gadgetv1alpha1 "github.com/kinvolk/inspektor-gadget/pkg/apis/gadget/v1alpha1"
@@ -112,7 +112,7 @@ func (f *TraceFactory) OutputModesSupported() map[string]struct{} {
 }
 
 func (f *TraceFactory) AddToScheme(scheme *apimachineryruntime.Scheme) {
-	utilruntime.Must(seccompprofilev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(seccompprofile.AddToScheme(scheme))
 }
 
 func deleteTrace(name string, t interface{}) {
@@ -169,7 +169,7 @@ func genPubSubKey(name string) pubSubKey {
 }
 
 func seccompProfileAddLabelsAndAnnotations(
-	r *seccompprofilev1alpha1.SeccompProfile,
+	r *seccompprofile.SeccompProfile,
 	trace *gadgetv1alpha1.Trace,
 	podName string,
 	containerName string,
@@ -203,7 +203,7 @@ type SeccompProfileNsName struct {
 // podName: If there do not exist profiles with podname or podname-X as name.
 // podName-2: If there exist a profile with the podname but no one with podname-X.
 // podName-<X+1>: If there exist at least one profile with podname-X.
-func getSeccompProfileNextName(profileList []seccompprofilev1alpha1.SeccompProfile, podName string) string {
+func getSeccompProfileNextName(profileList []seccompprofile.SeccompProfile, podName string) string {
 	currentCounter := 0
 	for _, profile := range profileList {
 		if !strings.HasPrefix(profile.Name, podName) {
@@ -264,7 +264,7 @@ func getSeccompProfileNsName(
 	// suffix in case there is already a profile with the podname name.
 	var profileName string
 	if cli != nil {
-		profileList := &seccompprofilev1alpha1.SeccompProfileList{}
+		profileList := &seccompprofile.SeccompProfileList{}
 		err := cli.List(
 			context.TODO(),
 			profileList,
