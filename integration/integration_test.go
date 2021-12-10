@@ -80,6 +80,29 @@ func TestMain(m *testing.M) {
 	os.Exit(ret)
 }
 
+func TestExecsnoop(t *testing.T) {
+	execsnoopCmd := &command{
+		name:           "Start execsnoop gadget",
+		cmd:            "$KUBECTL_GADGET execsnoop -n test-ns",
+		expectedRegexp: `test-ns\s+test-pod\s+test-pod\s+date`,
+		startAndStop:   true,
+	}
+
+	commands := []*command{
+		execsnoopCmd, // Start it.
+		{
+			name:           "Run pod which does a lot of exec",
+			cmd:            "kubectl run --restart=Never --image=busybox -n test-ns test-pod -- sh -c 'while true; do date; done'",
+			expectedString: "pod/test-pod created\n",
+		},
+		waitUntilTestPodReady,
+		deleteTestPod,
+		execsnoopCmd, // Stop it.
+	}
+
+	runCommands(commands, t)
+}
+
 func TestMountsnoop(t *testing.T) {
 	mountsnoopCmd := &command{
 		name:           "Start mountsnoop gadget",
