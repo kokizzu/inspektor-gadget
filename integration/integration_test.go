@@ -26,6 +26,14 @@ var integration = flag.Bool("integration", false, "run integration tests")
 // image such as docker.io/kinvolk/gadget:latest
 var image = flag.String("image", "", "gadget container image")
 
+func runCommands(cmds []*command, t *testing.T) {
+	failed := false
+
+	for _, cmd := range cmds {
+		failed = cmd.run(t, failed)
+	}
+}
+
 func TestMain(m *testing.M) {
 	flag.Parse()
 
@@ -70,6 +78,29 @@ func TestMain(m *testing.M) {
 	cleanupInspektorGadget.runWithoutTest()
 
 	os.Exit(ret)
+}
+
+func TestMountsnoop(t *testing.T) {
+	mountsnoopCmd := &command{
+		name:           "Start mountsnoop gadget",
+		cmd:            "$KUBECTL_GADGET mountsnoop -n test-ns",
+		expectedRegexp: `test-pod\s+test-pod\s+mount.*mount\("/mnt", "/mnt", .*\) = -ENOENT`,
+		startAndStop:   true,
+	}
+
+	commands := []*command{
+		mountsnoopCmd, // Start it.
+		{
+			name:           "Run pod which tries to mount a directory",
+			cmd:            "kubectl run --restart=Never --image=busybox -n test-ns test-pod -- sh -c 'while true; do mount /mnt /mnt; done'",
+			expectedRegexp: "pod/test-pod created",
+		},
+		waitUntilTestPodReady,
+		deleteTestPod,
+		mountsnoopCmd, // Stop it.
+	}
+
+	runCommands(commands, t)
 }
 
 func TestTraceloop(t *testing.T) {
