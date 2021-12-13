@@ -243,6 +243,29 @@ func TestSocketCollector(t *testing.T) {
 	runCommands(commands, t)
 }
 
+func TestTcpconnect(t *testing.T) {
+	tcpconnectCmd := &command{
+		name:           "Start tcpconnect gadget",
+		cmd:            "$KUBECTL_GADGET tcpconnect -n test-ns",
+		expectedRegexp: `test-ns\s+test-pod\s+test-pod\s+\d+\s+wget`,
+		startAndStop:   true,
+	}
+
+	commands := []*command{
+		tcpconnectCmd, // Start it.
+		{
+			name:           "Run pod which opens TCP socket",
+			cmd:            "kubectl run --restart=Never --image=busybox -n test-ns test-pod -- sh -c 'while true; do wget -q -O /dev/null -T 3 http://1.1.1.1; done'",
+			expectedRegexp: "pod/test-pod created",
+		},
+		waitUntilTestPodReady,
+		deleteTestPod,
+		tcpconnectCmd, // Stop it.
+	}
+
+	runCommands(commands, t)
+}
+
 func TestTraceloop(t *testing.T) {
 	commands := []*command{
 		{
