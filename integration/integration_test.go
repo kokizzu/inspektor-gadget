@@ -82,6 +82,26 @@ func TestMain(m *testing.M) {
 	os.Exit(ret)
 }
 
+func TestBiotop(t *testing.T) {
+	biotopCmd := &command{
+		name:           "Start biotop gadget",
+		cmd:            "$KUBECTL_GADGET biotop --node $(kubectl get node --no-headers | cut -d' ' -f1)",
+		expectedRegexp: `etcd`,
+		startAndStop:   true,
+	}
+
+	commands := []*command{
+		biotopCmd, // Start it.
+		{
+			name: "Wait a bit.",
+			cmd:  "sleep 10",
+		},
+		biotopCmd, // Stop it.
+	}
+
+	runCommands(commands, t)
+}
+
 func TestCapabilities(t *testing.T) {
 	capabilitiesCmd := &command{
 		name:           "Start capabilities gadget",
