@@ -263,6 +263,25 @@ func TestProfile(t *testing.T) {
 	runCommands(commands, t)
 }
 
+func TestSeccompadvisor(t *testing.T) {
+	commands := []*command{
+		{
+			name:           "Run test pod",
+			cmd:            "kubectl run --restart=Never --image=busybox -n test-ns test-pod -- sh -c 'while true; do echo foo; done'",
+			expectedRegexp: "pod/test-pod created",
+		},
+		waitUntilTestPodReady,
+		{
+			name:           "Run seccomp-advisor gadget",
+			cmd:            "id=$($KUBECTL_GADGET seccomp-advisor start -n test-ns -p test-pod); sleep 15; $KUBECTL_GADGET seccomp-advisor stop $id",
+			expectedRegexp: `write`,
+		},
+		deleteTestPod,
+	}
+
+	runCommands(commands, t)
+}
+
 func TestSocketCollector(t *testing.T) {
 	if *githubCI {
 		t.Skip("Cannot run process-collector within GitHub CI.")
