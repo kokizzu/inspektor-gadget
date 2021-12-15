@@ -2,7 +2,7 @@
 
 # BCC built from the gadget branch in the kinvolk/bcc fork.
 # See BCC section in docs/CONTRIBUTING.md for further details.
-ARG BCC="quay.io/kinvolk/bcc:520591c0fc491862c12337609ff9cbc9375d4de3-focal-release"
+ARG BCC="quay.io/kinvolk/bcc:302235e016b9a5255037c9075d28478557c0fc16-focal-release"
 ARG OS_TAG=20.04
 
 FROM ${BCC} as bcc
@@ -15,11 +15,13 @@ RUN set -ex; \
 	export DEBIAN_FRONTEND=noninteractive; \
 	apt-get update && \
 	apt-get install -y gcc make golang-1.16 ca-certificates git clang \
-		software-properties-common libseccomp-dev && \
-	add-apt-repository -y ppa:tuxinvader/kernel-build-tools && \
-	apt-get update && \
-	apt-get install -y libbpf-dev && \
+		software-properties-common libseccomp-dev libelf-dev pkg-config && \
 	ln -s /usr/lib/go-1.16/bin/go /bin/go
+
+# Install libbpf-dev from source to be cross-platform.
+RUN git clone https://github.com/libbpf/libbpf.git && \
+	cd libbpf/src && \
+	make install
 
 # Download BTFHub files
 COPY ./tools /btf-tools
@@ -53,7 +55,7 @@ RUN set -ex; \
 # - https://github.com/kinvolk/traceloop/actions
 # - https://hub.docker.com/r/kinvolk/traceloop/tags
 
-FROM docker.io/kinvolk/traceloop:20211109004128958575 as traceloop
+FROM docker.io/kinvolk/traceloop:2059b729c0ac8aa79016dacb06fbdaa1867c1446 as traceloop
 
 # Main gadget image
 
