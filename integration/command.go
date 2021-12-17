@@ -112,48 +112,37 @@ var cleanupInspektorGadget *command = &command{
 
 // run runs the command on the given as parameter test.
 // It returns true to indicate the command failed, false if it succeeded.
-func (c *command) run(t *testing.T, failed bool) bool {
-	t.Run(c.name, func(t *testing.T) {
-		if failed && !c.cleanup {
-			t.Skip("Previous c failed.")
+func (c *command) run(t *testing.T) {
+	if c.startAndStop {
+		if !c.started {
+			c.start(t)
+
+			c.started = true
+		} else {
+			c.stop(t)
 		}
 
-		if c.startAndStop {
-			if !c.started {
-				c.start(t, failed)
+		return
+	}
 
-				c.started = true
-			} else {
-				c.stop(t, failed)
-			}
+	t.Logf("command: %s\n", c.cmd)
+	cmd := exec.Command("/bin/sh", "-c", c.cmd)
+	output, err := cmd.CombinedOutput()
+	actual := string(output)
+	t.Logf("command returned:\n%s\n", actual)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-			return
+	if c.expectedRegexp != "" {
+		r := regexp.MustCompile(c.expectedRegexp)
+		if !r.MatchString(actual) {
+			t.Fatalf("regexp didn't match: %s\n%s\n", c.expectedRegexp, actual)
 		}
-
-		t.Logf("command: %s\n", c.cmd)
-		cmd := exec.Command("/bin/sh", "-c", c.cmd)
-		output, err := cmd.CombinedOutput()
-		actual := string(output)
-		t.Logf("command returned:\n%s\n", actual)
-		if err != nil {
-			failed = true
-			t.Fatal(err)
-		}
-
-		if c.expectedRegexp != "" {
-			r := regexp.MustCompile(c.expectedRegexp)
-			if !r.MatchString(actual) {
-				failed = true
-				t.Fatalf("regexp didn't match: %s\n%s\n", c.expectedRegexp, actual)
-			}
-		}
-		if c.expectedString != "" && actual != c.expectedString {
-			failed = true
-			t.Fatalf("diff: %v", pretty.Diff(c.expectedString, actual))
-		}
-	})
-
-	return failed
+	}
+	if c.expectedString != "" && actual != c.expectedString {
+		t.Fatalf("diff: %v", pretty.Diff(c.expectedString, actual))
+	}
 }
 
 // runWithoutTest runs the command, this is thought to be used in TestMain().
@@ -187,27 +176,18 @@ func (c *command) runWithoutTest() error {
 // wait it using stop().
 // It returns true to indicate the command failed to start, false if it
 // succeeded.
-func (c *command) start(t *testing.T, failed bool) bool {
-	t.Run(c.name, func(t *testing.T) {
-		if failed && !c.cleanup {
-			t.Skip("Previous command failed.")
-		}
+func (c *command) start(t *testing.T /*, failed bool*/) {
+	t.Logf("Start command: %s\n", c.cmd)
+	cmd := exec.Command("/bin/sh", "-c", c.cmd)
+	cmd.Stdout = &c.stdout
+	cmd.Stderr = &c.stderr
 
-		t.Logf("Start command: %s\n", c.cmd)
-		cmd := exec.Command("/bin/sh", "-c", c.cmd)
-		cmd.Stdout = &c.stdout
-		cmd.Stderr = &c.stderr
+	err := cmd.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		err := cmd.Start()
-		if err != nil {
-			failed = true
-			t.Fatal(err)
-		}
-
-		c.command = cmd
-	})
-
-	return failed
+	c.command = cmd
 }
 
 // stop stops a command previously started with start().
@@ -216,36 +196,25 @@ func (c *command) start(t *testing.T, failed bool) bool {
 // Cmd output is then checked with regard to expectedString and expectedRegexp
 // It returns true to indicate the command failed to start, false if it
 // succeeded.
-func (c *command) stop(t *testing.T, failed bool) bool {
-	t.Run(c.name, func(t *testing.T) {
-		if failed && !c.cleanup {
-			t.Skip("Previous command failed.")
-		}
+func (c *command) stop(t *testing.T /*, failed bool*/) {
+	t.Logf("Stop command: %s\n", c.cmd)
+	err := c.command.Process.Kill()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		t.Logf("Stop command: %s\n", c.cmd)
-		err := c.command.Process.Kill()
-		if err != nil {
-			failed = true
-			t.Fatal(err)
-		}
+	stdout := c.stdout.String()
+	stderr := c.stderr.String()
 
-		stdout := c.stdout.String()
-		stderr := c.stderr.String()
-
-		if c.expectedRegexp != "" {
-			r := regexp.MustCompile(c.expectedRegexp)
-			if !r.MatchString(stdout) {
-				failed = true
-				fmt.Fprintf(os.Stderr, "%s\n", stderr)
-				t.Fatalf("regexp didn't match: %s\n%s\n", c.expectedRegexp, stdout)
-			}
-		}
-		if c.expectedString != "" && stdout != c.expectedString {
-			failed = true
+	if c.expectedRegexp != "" {
+		r := regexp.MustCompile(c.expectedRegexp)
+		if !r.MatchString(stdout) {
 			fmt.Fprintf(os.Stderr, "%s\n", stderr)
-			t.Fatalf("diff: %v", pretty.Diff(c.expectedString, stdout))
+			t.Fatalf("regexp didn't match: %s\n%s\n", c.expectedRegexp, stdout)
 		}
-	})
-
-	return failed
+	}
+	if c.expectedString != "" && stdout != c.expectedString {
+		fmt.Fprintf(os.Stderr, "%s\n", stderr)
+		t.Fatalf("diff: %v", pretty.Diff(c.expectedString, stdout))
+	}
 }

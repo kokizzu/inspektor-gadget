@@ -29,10 +29,27 @@ var image = flag.String("image", "", "gadget container image")
 var githubCI = flag.Bool("github-ci", false, "skip some tests which cannot be run on GitHub CI due to host kernel not BPF ready")
 
 func runCommands(cmds []*command, t *testing.T) {
-	failed := false
+	defer func() {
+		for _, cmd := range cmds {
+			if cmd.startAndStop && cmd.started {
+				cmd.stop(t)
+				continue
+			}
+
+			if !cmd.cleanup {
+				continue
+			}
+			cmd.run(t)
+		}
+	}()
 
 	for _, cmd := range cmds {
-		failed = cmd.run(t, failed)
+		// do not run cleanup commands here
+		if cmd.cleanup {
+			continue
+		}
+
+		cmd.run(t)
 	}
 }
 
@@ -456,8 +473,5 @@ func TestTraceloop(t *testing.T) {
 		},
 	}
 
-	failed := false
-	for _, tt := range commands {
-		failed = tt.run(t, failed)
-	}
+	runCommands(commands, t)
 }
