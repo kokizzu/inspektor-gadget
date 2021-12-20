@@ -303,6 +303,14 @@ func generateSeccompPolicy(client client.Client, trace *gadgetv1alpha1.Trace, b 
 	r := syscallArrToSeccompPolicy(profileName, b)
 	seccompProfileAddLabelsAndAnnotations(r, trace, fullPodName, containername)
 
+	if trace.Spec.OutputMode == "ExternalResource" {
+		// If output mode is ExternalResource, thus Output field will not be used,
+		// so we can use it to store the profile name where the seccomp profile will
+		// be stored.
+		// NOTE r.ObjectMeta.Name contains name after generation if it occurred.
+		trace.Status.Output = r.ObjectMeta.Name
+	}
+
 	return r, nil
 }
 

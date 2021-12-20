@@ -129,7 +129,7 @@ func runSeccompAdvisorStop(cmd *cobra.Command, args []string) error {
 	callback := func(results []gadgetv1alpha1.Trace) error {
 		for _, i := range results {
 			if i.Spec.OutputMode == "ExternalResource" {
-				fmt.Printf("Successfully created seccomp profile\n")
+				fmt.Printf("Successfully created seccomp profile: %s\n", i.Status.Output)
 
 				return nil
 			}
