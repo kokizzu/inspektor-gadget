@@ -286,6 +286,26 @@ func getSeccompProfileNsName(
 	}, nil
 }
 
+// generateSeccompPolicy generates a seccomp policy which is ready to be
+// created.
+func generateSeccompPolicy(client client.Client, trace *gadgetv1alpha1.Trace, b []byte, podname, containername, fullPodName string) (*seccompprofilev1alpha1.SeccompProfile, error) {
+	profileName, err := getSeccompProfileNsName(
+		client,
+		trace.ObjectMeta.Namespace,
+		trace.Spec.Output,
+		podname,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get the profile name: %s", err)
+	}
+
+	r := syscallArrToSeccompPolicy(profileName, b)
+	seccompProfileAddLabelsAndAnnotations(r, trace, fullPodName, containername)
+
+	return r, nil
+}
+
 // containerTerminated is a callback called every time a container is
 // terminated on the node. It is used to generate a SeccompProfile when a
 // container terminates.
@@ -308,20 +328,13 @@ func (t *Trace) containerTerminated(trace *gadgetv1alpha1.Trace, event pubsub.Pu
 	// The container has terminated. Cleanup the BPF hash map
 	traceSingleton.tracer.Delete(event.Container.Mntns)
 
-	profileName, err := getSeccompProfileNsName(
-		t.client,
-		trace.ObjectMeta.Namespace,
-		trace.Spec.Output,
-		event.Container.Podname,
-	)
+	podName := fmt.Sprintf("%s/%s", event.Container.Namespace, event.Container.Podname)
+
+	r, err := generateSeccompPolicy(t.client, trace, b, event.Container.Podname, event.Container.Name, podName)
 	if err != nil {
-		log.Errorf("Trace %s: Failed to get the profile name: %s", traceName, err)
+		log.Errorf("Trace %s: %v", traceName, err)
 		return
 	}
-
-	r := syscallArrToSeccompPolicy(profileName, b)
-	podName := fmt.Sprintf("%s/%s", event.Container.Namespace, event.Container.Podname)
-	seccompProfileAddLabelsAndAnnotations(r, trace, podName, event.Container.Name)
 
 	switch trace.Spec.OutputMode {
 	case "ExternalResource":
@@ -489,20 +502,13 @@ func (t *Trace) Generate(trace *gadgetv1alpha1.Trace) {
 		trace.Status.Output = string(output)
 		trace.Status.OperationError = ""
 	case "ExternalResource":
-		profileName, err := getSeccompProfileNsName(
-			t.client,
-			trace.ObjectMeta.Namespace,
-			trace.Spec.Output,
-			trace.Spec.Filter.Podname,
-		)
+		podName := fmt.Sprintf("%s/%s", trace.Spec.Filter.Namespace, trace.Spec.Filter.Podname)
+
+		r, err := generateSeccompPolicy(t.client, trace, b, trace.Spec.Filter.Podname, containerName, podName)
 		if err != nil {
-			trace.Status.OperationError = fmt.Sprintf("Failed to get the profile name: %s", err)
+			trace.Status.OperationError = err.Error()
 			return
 		}
-
-		r := syscallArrToSeccompPolicy(profileName, b)
-		podName := fmt.Sprintf("%s/%s", trace.Spec.Filter.Namespace, trace.Spec.Filter.Podname)
-		seccompProfileAddLabelsAndAnnotations(r, trace, podName, containerName)
 
 		err = t.client.Create(context.TODO(), r)
 		if err != nil {
