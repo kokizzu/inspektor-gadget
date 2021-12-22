@@ -164,7 +164,7 @@ minikube-install: gadget-container kubectl-gadget
 	# Delete traces CRD first: the gadget DaemonSet needs to be running
 	# because of Finalizers.
 	kubectl delete crd traces.gadget.kinvolk.io || true
-	./kubectl-gadget deploy | kubectl delete -f - || true
+	./kubectl-gadget undeploy || true
 	time kubectl wait --for=delete namespace gadget 2>/dev/null || true
 	time kubectl wait --for=delete daemonset -n kube-system gadget 2>/dev/null || true
 	./kubectl-gadget deploy --hook-mode=fanotify \
