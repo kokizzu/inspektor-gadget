@@ -271,27 +271,12 @@ func getExpectedOwnerReference(ownerReferences []metav1.OwnerReference) *metav1.
 		"ReplicationController": {},
 	}
 
-	if len(ownerReferences) == 0 {
-		return nil
-	}
-
 	var ownerRef *metav1.OwnerReference
 
-	if len(ownerReferences) == 1 {
-		ownerRef = &ownerReferences[0]
-		if _, ok := expectedResKinds[ownerRef.Kind]; ok {
-			return ownerRef
-		}
-		return nil
-	}
-
 	for i, or := range ownerReferences {
-		if *or.Controller {
+		if _, ok := expectedResKinds[or.Kind]; ok && or.Controller != nil && *or.Controller {
 			// There is at most one controller reference per resource
-			if _, ok := expectedResKinds[or.Kind]; ok {
-				return &or
-			}
-			return nil
+			return &or
 		}
 
 		// Keep track of the first expected reference in case it is be needed
@@ -315,7 +300,7 @@ func getKubeClientDynamic() (dynamic.Interface, error) {
 	return dynamicClient, nil
 }
 
-func getOwnerReference(dynamicClient dynamic.Interface,
+func getOwnerReferences(dynamicClient dynamic.Interface,
 	resNamespace, resKind, resGroupVersion, resName string,
 ) ([]metav1.OwnerReference, error) {
 	gv, err := schema.ParseGroupVersion(resGroupVersion)
@@ -346,9 +331,13 @@ func ownerReferenceEnrichment(
 	containerDefinition *pb.ContainerDefinition,
 	ownerReferences []metav1.OwnerReference,
 ) error {
+	if containerDefinition.OwnerReference != nil {
+		return fmt.Errorf("Container definition for pod %s already has owner reference: %v", containerDefinition.Podname, containerDefinition.OwnerReference)
+	}
+
 	dynamicClient, err := getKubeClientDynamic()
 	if err != nil {
-		return fmt.Errorf("failed get dynamic Kubernetes client: %w", err)
+		return fmt.Errorf("failed to get dynamic Kubernetes client: %w", err)
 	}
 
 	resGroupVersion := "v1"
@@ -359,7 +348,7 @@ func ownerReferenceEnrichment(
 	// Iterate until we reach the highest level of reference
 	for {
 		if len(ownerReferences) == 0 {
-			ownerReferences, err = getOwnerReference(dynamicClient,
+			ownerReferences, err = getOwnerReferences(dynamicClient,
 				resNamespace, resKind, resGroupVersion, resName)
 			if err != nil {
 				return fmt.Errorf("failed to get %s/%s/%s/%s owner reference: %w",
@@ -374,7 +363,7 @@ func ownerReferenceEnrichment(
 
 		ownerRef := getExpectedOwnerReference(ownerReferences)
 		if ownerRef == nil {
-			// Any expected owner reference found
+			// Not any expected owner reference found.
 			return nil
 		}
 
@@ -412,7 +401,11 @@ func WithKubernetesEnrichment(nodeName string) ContainerCollectionOption {
 		cc.containerEnrichers = append(cc.containerEnrichers, func(containerDefinition *pb.ContainerDefinition) bool {
 			// Enrich only with owner reference if the data is already there
 			if containerDefinition.Podname != "" {
-				ownerReferenceEnrichment(containerDefinition, nil)
+				err := ownerReferenceEnrichment(containerDefinition, nil)
+				if err != nil {
+					log.Errorf("%v", err)
+					return false
+				}
 				return true
 			}
 
@@ -479,7 +472,11 @@ func WithKubernetesEnrichment(nodeName string) ContainerCollectionOption {
 			}
 
 			if len(podOwnerRef) != 0 {
-				ownerReferenceEnrichment(containerDefinition, podOwnerRef)
+				err := ownerReferenceEnrichment(containerDefinition, podOwnerRef)
+				if err != nil {
+					log.Errorf("%v", err)
+					return false
+				}
 			}
 
 			return true
