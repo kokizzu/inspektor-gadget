@@ -31,7 +31,6 @@ require (
 	k8s.io/cli-runtime v0.25.4
 	k8s.io/client-go v0.25.4
 	k8s.io/code-generator v0.25.0
-	k8s.io/cri-api v0.23.1
 	sigs.k8s.io/controller-runtime v0.13.1
 	sigs.k8s.io/security-profiles-operator v0.3.1-0.20211122222133-6e12fe5f2daa
 	sigs.k8s.io/yaml v1.3.0
