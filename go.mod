@@ -47,8 +47,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.28.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/sync v0.7.0
-	golang.org/x/sys v0.21.0
-	golang.org/x/term v0.21.0
+	golang.org/x/sys v0.22.0
+	golang.org/x/term v0.22.0
 	golang.org/x/text v0.16.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.2
@@ -73,6 +73,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
 	github.com/sigstore/sigstore v1.8.4
+	github.com/spf13/pflag v1.0.5
 	github.com/tetratelabs/wazero v1.7.3
 )
 
@@ -178,7 +179,6 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
