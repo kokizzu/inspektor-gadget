@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cilium/ebpf v0.16.0
 	github.com/containerd/containerd v1.7.23
-	github.com/containerd/nri v0.6.1
+	github.com/containerd/nri v0.7.0
 	github.com/containers/common v0.60.4
 	github.com/containers/image/v5 v5.32.2
 	github.com/coreos/go-systemd/v22 v22.5.0
@@ -54,14 +54,14 @@ require (
 	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.31.1
-	k8s.io/apiextensions-apiserver v0.31.1
-	k8s.io/apimachinery v0.31.1
-	k8s.io/cli-runtime v0.31.1
-	k8s.io/client-go v0.31.1
-	k8s.io/code-generator v0.31.1
-	k8s.io/cri-api v0.31.1
-	k8s.io/kubelet v0.31.1
+	k8s.io/api v0.31.2
+	k8s.io/apiextensions-apiserver v0.31.2
+	k8s.io/apimachinery v0.31.2
+	k8s.io/cli-runtime v0.31.2
+	k8s.io/client-go v0.31.2
+	k8s.io/code-generator v0.31.2
+	k8s.io/cri-api v0.31.2
+	k8s.io/kubelet v0.31.2
 	oras.land/oras-go/v2 v2.4.0
 	sigs.k8s.io/controller-runtime v0.19.0
 	sigs.k8s.io/security-profiles-operator v0.8.4
@@ -96,7 +96,7 @@ require (
 	github.com/containerd/fifo v1.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
-	github.com/containerd/ttrpc v1.2.5 // indirect
+	github.com/containerd/ttrpc v1.2.6-0.20240827082320-b5cd6e4b3287 // indirect
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 // indirect
 	github.com/containers/ocicrypt v1.2.0 // indirect
@@ -206,7 +206,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	k8s.io/component-base v0.31.1 // indirect
+	k8s.io/component-base v0.31.2 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240812201722-3b05ca7b6e59 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240812233141-91dab695df6f // indirect
@@ -218,8 +218,10 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
-// cilium/ebpf with https://github.com/cilium/ebpf/pull/1588
-replace github.com/cilium/ebpf => github.com/cilium/ebpf v0.16.1-0.20241017091859-59f2044b26b5
+// cilium/ebpf with:
+// - https://github.com/cilium/ebpf/pull/1588
+// - https://github.com/cilium/ebpf/pull/1590
+replace github.com/cilium/ebpf => github.com/cilium/ebpf v0.16.1-0.20241023154409-d3c63ab2edcb
 
 replace k8s.io/component-base => k8s.io/component-base v0.0.0-20240417101527-62c04b35eff6
 
