@@ -49,10 +49,6 @@ jobs:
         go-version: ${{ env.GO_VERSION_DOC_CHECK }}
         cache: true
       id: go
-    - name: Check if generated files are updated
-      run: |
-        make manifests generate generate-documentation
-        git diff --exit-code HEAD --
     - name: Check that there are not broken links
       uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31 # v1.0.17
       with:
@@ -211,7 +207,7 @@ jobs:
       with:
         registry: ${{ env.REGISTRY }}
         container-image: ${{ env.CONTAINER_REPO }}
-    - uses: github/codeql-action/init@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+    - uses: github/codeql-action/init@fca7ace96b7d713c7035871441bd52efbe39e27e # v3.28.19
       with:
         languages: go
     - name: Build ${{ matrix.client }}-${{ matrix.os }}-${{ matrix.arch }}
@@ -245,7 +241,7 @@ jobs:
           ${{ matrix.client }}${dot_exe} LICENSE
         rm -rf "$platform"
     - name: CWE checks for ${{ matrix.client }}-${{ matrix.os }}-${{ matrix.arch }}
-      uses: github/codeql-action/analyze@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+      uses: github/codeql-action/analyze@fca7ace96b7d713c7035871441bd52efbe39e27e # v3.28.19
       with:
         category: ${{ matrix.client }}-${{ matrix.os }}-${{ matrix.arch }}
     - name: Add ${{ matrix.client }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz as artifact.
@@ -366,7 +362,7 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
       id: go
-    - uses: github/codeql-action/init@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+    - uses: github/codeql-action/init@fca7ace96b7d713c7035871441bd52efbe39e27e # v3.28.19
       with:
         languages: go
     - name: Build ig-linux-${{ matrix.platform }} for CWE checks
@@ -378,7 +374,7 @@ jobs:
           -ldflags "-extldflags '-static'" \
           github.com/inspektor-gadget/inspektor-gadget/cmd/ig
     - name: CWE checks for ig-linux-${{ matrix.platform }}
-      uses: github/codeql-action/analyze@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+      uses: github/codeql-action/analyze@fca7ace96b7d713c7035871441bd52efbe39e27e # v3.28.19
       with:
         category: ig-linux-${{ matrix.platform }}
 
@@ -397,14 +393,14 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
       id: go
-    - uses: github/codeql-action/init@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+    - uses: github/codeql-action/init@fca7ace96b7d713c7035871441bd52efbe39e27e # v3.28.19
       with:
         languages: go
     - name: Build gadget-container-deps
       run: |
         make -C gadget-container
     - name: CWE checks for gadget-container-deps
-      uses: github/codeql-action/analyze@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+      uses: github/codeql-action/analyze@fca7ace96b7d713c7035871441bd52efbe39e27e # v3.28.19
       with:
         category: gadget-container-deps
 
@@ -814,7 +810,7 @@ jobs:
           name: gadget-container-image-${{ matrix.os }}-${{ matrix.platform }}.tar
           path: ${{ github.workspace }}
       - name: Scan gadget ${{ matrix.os }} ${{ matrix.platform }} container image
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.30.0
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # v0.31.0
         with:
           input: gadget-container-image-${{ matrix.os }}-${{ matrix.platform }}.tar
           format: 'table'
@@ -1114,12 +1110,6 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-    - name: Build builtin gadgets example binaries
-      run: |
-        cd examples
-        for dir in $(dirname $(find builtin-gadgets -name README.md)); do
-          go build "./$dir";
-        done
     - name: Build gadgets example binaries
       run: |
         cd examples
@@ -1153,9 +1143,6 @@ jobs:
     - name: Unit tests
       run: |
         sudo make test
-    - name: Controller unit tests
-      run: |
-        make controller-tests
 
   benchmarks:
     name: Benchmarks
@@ -1264,6 +1251,71 @@ jobs:
       with:
         name: gadget-charts-tgz
         path: charts/bin/*.tgz
+
+  test-helm-charts:
+    name: Test Helm charts
+    # level: 2
+    runs-on: ubuntu-latest
+    needs:
+      - package-helm-charts
+      - build-gadget-container-images
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    - name: Install Helm
+      uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Download Helm charts
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: gadget-charts-tgz
+    - name: Setup minikube
+      uses: ./.github/actions/setup-minikube
+      with:
+        runtime: "docker"
+    - name: Set container repository and determine image tag
+      id: set-repo-determine-image-tag
+      uses: ./.github/actions/set-container-repo-and-determine-image-tag
+      with:
+        registry: ${{ env.REGISTRY }}
+        container-image: ${{ env.CONTAINER_REPO }}
+    - name: Get gadget-container-image-linux-amd64.tar from artifact.
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: gadget-container-image-linux-amd64.tar
+        path: /home/runner/work/inspektor-gadget/
+    - name: Prepare minikube by loading gadget-container-image-linux-amd64.tar
+      env:
+        CONTAINER_REPO: ${{ steps.set-repo-determine-image-tag.outputs.container-repo }}
+        IMAGE_TAG: ${{ steps.set-repo-determine-image-tag.outputs.image-tag }}
+      run: |
+        # 'docker load' ensures the image is named correctly e.g podman has issues loading untagged images from archive
+        docker load -i /home/runner/work/inspektor-gadget/gadget-container-image-linux-amd64.tar
+        minikube image load "${CONTAINER_REPO}:${IMAGE_TAG}"
+    - name: Test Helm charts
+      # default shell is "bash -e {0}" which will fail-fast if the command returns a non-zero exit code
+      # See: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
+      shell: bash {0}
+      run: |
+        # Install the Helm chart
+        helm install gadget gadget-*.tgz \
+          --namespace gadget --create-namespace \
+          --set image.repository=${{ steps.set-repo-determine-image-tag.outputs.container-repo }} \
+          --set image.tag=${{ steps.set-repo-determine-image-tag.outputs.image-tag }} \
+          --set image.pullPolicy=Never
+
+        # Validate the installation
+        kubectl rollout status daemonset/gadget --namespace gadget --timeout=60s
+        if [[ $? -ne 0 ]]; then
+          echo "DaemonSet gadget is not available"
+          kubectl get pods --namespace gadget
+          kubectl describe daemonset gadget --namespace gadget
+          kubectl logs -n gadget daemonset/gadget
+          exit 1
+        fi
+        
+        # Uninstall the chart
+        helm uninstall gadget --namespace gadget
 
   publish-helm-charts:
     name: Publish Helm charts
@@ -1558,6 +1610,7 @@ jobs:
           BUILDER_IMAGE: ${{ needs.build-helper-images.outputs.gadget_builder_image }}
           GADGET_REPOSITORY: ${{ steps.set-repo-determine-image-tag.outputs.gadget-repository }}
           GADGET_TAG: ${{ steps.set-repo-determine-image-tag.outputs.gadget-tag }}
+          CFLAGS: "-Werror"
         run: |
           make build-gadgets -o install/ig -j$(nproc)
 
@@ -2258,10 +2311,7 @@ jobs:
         REF_NAME: ${{ github.ref_name }}
       run: |
         export IMAGE="${{ env.REGISTRY }}/${{ env.CONTAINER_REPO }}:${IMAGE_TAG}"
-
-        # Use echo of cat to avoid printing a new line between files.
-        echo "$(cat pkg/resources/manifests/deploy.yaml) $(cat pkg/resources/crd/bases/gadget.kinvolk.io_traces.yaml)" > "inspektor-gadget-${REF_NAME}.yaml"
-
+        cp pkg/resources/manifests/deploy.yaml "inspektor-gadget-${REF_NAME}.yaml"
         perl -pi -e 's@(image:) ".+\"@$1 "$ENV{IMAGE}"@; s@"latest"@"$ENV{IMAGE_TAG}"@;' "inspektor-gadget-${REF_NAME}.yaml"
     - name: Create Draft Release
       id: create_release

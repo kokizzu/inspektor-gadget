@@ -27,6 +27,7 @@ data:
       crio-socketpath: /run/crio/crio.sock
       docker-socketpath: /run/docker.sock
       podman-socketpath: /run/podman/podman.sock
+      gadget-namespace: gadget
       operator:
         oci:
           verify-image: true
@@ -158,7 +159,7 @@ spec:
           terminationMessagePolicy: FallbackToLogsOnError
           image: ghcr.io/inspektor-gadget/inspektor-gadget:latest
           imagePullPolicy: Always
-          command: [ "/bin/gadgettracermanager", "-serve", "-controller" ]
+          command: [ "/bin/gadgettracermanager", "-serve" ]
           lifecycle:
             preStop:
               exec:

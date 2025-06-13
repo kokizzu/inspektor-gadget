@@ -448,9 +448,14 @@ func (l *localManagerTrace) handleGadgetInstance(log logger.Logger) error {
 						attachContainerFunc(event.Container)
 					case containercollection.EventTypeRemoveContainer:
 						detachContainerFunc(event.Container)
+					case containercollection.EventTypePreCreateContainer:
+						// nothing to do
 					default:
-						log.Errorf("unknown event type, expected either %s or %s, got %s", containercollection.EventTypeAddContainer, containercollection.EventTypeRemoveContainer, event.Type)
-						return
+						log.Errorf("unknown event type, expected either %s, %s or %s, got %s",
+							containercollection.EventTypePreCreateContainer,
+							containercollection.EventTypeAddContainer,
+							containercollection.EventTypeRemoveContainer,
+							event.Type)
 					}
 				},
 			)
@@ -544,6 +549,10 @@ func (l *localManager) InstantiateDataOperator(gadgetCtx operators.GadgetContext
 
 	var containersPublisher *common.ContainersPublisher
 	if enableContainersDs {
+		if l.igManager == nil {
+			return nil, fmt.Errorf("container-collection isn't available, but containers datasource is enabled")
+		}
+
 		containersPublisher, err = common.NewContainersPublisher(gadgetCtx, &l.igManager.ContainerCollection)
 		if err != nil {
 			return nil, fmt.Errorf("creating containers publisher: %w", err)

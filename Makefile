@@ -63,7 +63,6 @@ endif
 # export variables that are used in Makefile.btfgen as well.
 export BPFTOOL ARCH
 
-include crd.mk
 include tests.mk
 include minikube.mk
 
@@ -265,19 +264,12 @@ cross-kubectl-gadget-container:
 generate-testdata:
 	$(MAKE) -C ./pkg/operators/ebpf/testdata
 	$(MAKE) -C ./pkg/operators/wasm/testdata
+	$(MAKE) -C ./pkg/operators/wasm/rusttestdata
 
 .PHONY: test
 test: generate-testdata
 	# skip gadgets tests
 	go test -exec sudo -v $$(go list ./... | grep -v 'github.com/inspektor-gadget/inspektor-gadget/gadgets')
-
-.PHONY: controller-tests
-controller-tests: kube-apiserver etcd kubectl
-	ACK_GINKGO_DEPRECATIONS=1.16.4 \
-	TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_BIN) \
-	TEST_ASSET_ETCD=$(ETCD_BIN) \
-	TEST_ASSET_KUBECTL=$(KUBECTL_BIN) \
-	go test -test.v ./pkg/controllers/... -controller-test
 
 # Individual tests can be selected with a command such as:
 # go test -exec sudo -ldflags="-s=false" -bench='^BenchmarkAllGadgetsWithContainers$/^container100$/snapshot-socket' -run=Benchmark ./internal/benchmarks/... -count 10
@@ -313,10 +305,6 @@ integration-tests: kubectl-gadget
 .PHONY: component-tests
 component-tests:
 	go test -exec sudo -v ./integration/components/... -integration -timeout 5m --builder-image $(GADGET_BUILDER)
-
-.PHONY: generate-documentation
-generate-documentation:
-	go run -tags docs cmd/gen-doc/gen-doc.go -repo $(shell pwd)
 
 .PHONY: website-local-update
 website-local-update:
@@ -459,7 +447,6 @@ help:
 	@echo  ''
 	@echo  'Testing targets:'
 	@echo  '  test				- Run unit tests'
-	@echo  '  controller-tests		- Run controllers unit tests'
 	@echo  '  ig-tests			- Run ig manager unit tests'
 	@echo  '  integration-tests		- Run integration tests (deploy IG before running the tests)'
 	@echo  '  integration-test-gadgets	- Run gadgets integration test'
@@ -472,7 +459,6 @@ help:
 	@echo  'Development targets:'
 	@echo  '  clang-format			- Format ebpf source files'
 	@echo  '  lint				- Lint the Go code'
-	@echo  '  generate-documentation	- Generate documentation for gadgets and trace CRD'
 	@echo  '  generate-manifests		- Generate manifests for the gadget deployment'
 	@echo  '  minikube-start		- Start a kubernetes cluster using minikube with the docker driver'
 	@echo  '  minikube-deploy		- Build and deploy the gadget container on minikube with docker driver, the cluster is started if it does not exist'

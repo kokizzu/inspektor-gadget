@@ -20,7 +20,7 @@ DOCKER ?= docker
 UNIT_TEST_DIR = test/unit
 INTEGRATION_TEST_DIR = test/integration
 
-GADGETS = \
+GADGETS ?= \
 	advise_networkpolicy \
 	advise_seccomp \
 	audit_seccomp \
@@ -58,6 +58,7 @@ GADGETS = \
 	ci/datasource-containers \
 	ci/inner_fields \
 	ci/sched_cls_drop \
+	ci/image_inspect \
 	#
 
 DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")

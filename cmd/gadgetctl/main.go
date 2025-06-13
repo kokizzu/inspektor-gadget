@@ -26,7 +26,6 @@ import (
 	"github.com/inspektor-gadget/inspektor-gadget/cmd/common"
 	"github.com/inspektor-gadget/inspektor-gadget/cmd/common/image"
 	commonutils "github.com/inspektor-gadget/inspektor-gadget/cmd/common/utils"
-	_ "github.com/inspektor-gadget/inspektor-gadget/pkg/all-gadgets"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/config"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/environment"
 	grpcruntime "github.com/inspektor-gadget/inspektor-gadget/pkg/runtime/grpc"
@@ -103,7 +102,6 @@ func main() {
 	}
 
 	hiddenColumnTags := []string{"kubernetes"}
-	common.AddCommandsFromRegistry(rootCmd, runtime, hiddenColumnTags)
 
 	common.AddInstanceCommands(rootCmd, runtime)
 	rootCmd.AddCommand(common.NewSyncCommand(runtime))
